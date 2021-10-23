@@ -1,8 +1,8 @@
 # From Python App workflow template
 push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+  branches: [ main ]
+pull_request:
+  branches: [ main ]
 
 jobs:
   build:
