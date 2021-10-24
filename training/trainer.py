@@ -4,8 +4,11 @@ trainer.py
 Trains the model.
 """
 
+import argparse
+
 import torch
 import torchvision
+import wandb
 
 from dataset import ImageSet
 
@@ -20,11 +23,12 @@ def train(batch_size, lr, patience, device):
     model.fc = torch.nn.Linear(model.fc.in_features, num_classes)
     loss_fn = torch.nn.CrossEntropyLoss()
     optimizer = torch.optim.AdamW(params=model.parameters(), lr=lr)
+    wandb.watch(model)
 
     no_improvement = 0
     best_dev_loss = 1000000000
 
-    max_epochs = 100
+    max_epochs = 150
     epochs = 0
 
     while no_improvement < patience and epochs < max_epochs:
@@ -55,15 +59,31 @@ def train(batch_size, lr, patience, device):
         if dev_loss < best_dev_loss:
             best_dev_loss = dev_loss
             no_improvement = 0
-            torch.save(model.state_dict(), "model_weights")
+            torch.save(model.state_dict(), "model_weights.pt")
+            wandb.save("model_weights.pt")
+            wandb.log({'epoch': epochs + 1, 'train_loss': train_loss, 'dev_loss': dev_loss, 'best_dev_loss': best_dev_loss})
             print("New best dev loss!")
         else:
+            wandb.log({'epoch': epochs + 1, 'train_loss': train_loss, 'dev_loss': dev_loss})
             no_improvement += 1
         epochs += 1
         print(f"Epoch: {epochs}; Training Loss: {train_loss}; Dev Loss: {dev_loss}; Best Dev Loss: {best_dev_loss}")
 
 
+def parse_all_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--patience", type=int, default=15)
+    return parser.parse_args()
+
+
+def setup_wandb():
+    wandb.init(project='shape-of-countries', entity='danisprague')
+    config = wandb.config
+    return config
+
+
 def main():
+    cfg = setup_wandb()
     cuda_avail = torch.cuda.is_available()
     device = None
     if cuda_avail:
@@ -71,7 +91,8 @@ def main():
     else:
         device = "cpu"
         print("Training on CPU :(")
-    train(batch_size=16, lr=1e-3, patience=5, device=device)
+    args = parse_all_args()
+    train(batch_size=cfg.batch_size, lr=cfg.lr, patience=args.patience, device=device)
 
 
 if __name__=="__main__":
