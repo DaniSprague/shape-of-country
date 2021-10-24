@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+	<title>Country Shape Matcher</title>
+	<script src="https://cdn.jsdelivr.net/npm/vue@2/dist/vue.js"></script>
+</head>
+
+<body>
+	<div id="app">
+		<p>Welcome to the app! Please submit a PNG with the object centered.</p>
+		<input type="file" id="submission" name="submission" accept="image/png" capture="environment">
+		<div>
+			<button v-on:click="submitPhoto">Submit</button>
+		</div>
+		<p>{{ message }}</p>
+	</div>
+
+	<script>
+		var app = new Vue({
+			el: '#app',
+			data: {
+				message: 'Submit a photo of an object to get the country it is shaped most like!'
+			},
+			methods: {
+				submitPhoto: function () {
+					if (document.getElementById("submission").files[0] == null) {
+						this.message = "You did not submit anything!"
+					} else {
+						this.message = 'Submitting...'
+						const reader = new FileReader()
+						const xhr = new XMLHttpRequest()
+						xhr.open("POST", "http://localhost:7071/api/ImageSubmission")
+						xhr.overrideMimeType("image/png")
+						reader.onload = function(evt) {
+							xhr.send(evt.target.result)
+							console.log(xhr.req)
+						}
+						reader.readAsBinaryString(document.getElementById("submission").files[0])
+						xhr.onreadystatechange = function() {
+							if (req.readyState == 4) {
+								if (req.status == 200) {
+									var json_data = JSON.parse(xhr.responseText)
+									this.message = json_data.country
+								}
+							}
+						}
+					}
+					
+				}
+			}
+		})
+	</script>
+</body>
+
+</html>
