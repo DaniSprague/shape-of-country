@@ -26,6 +26,8 @@ class ImageSet(torch.utils.data.Dataset):
         self.countries = list()
         self.backgrounds = list()
         self.backgrounds.append(PIL.Image.new("RGBA", (100, 100), (255, 255, 255)))
+        for entry in os.scandir("./dataset/textures"):
+            self.backgrounds.append(PIL.Image.open(entry.path).convert("RGBA").resize((100, 100)))
 
         for entry in os.scandir("./dataset/countries"):
             if entry.path.endswith(".png"):
@@ -43,8 +45,17 @@ class ImageSet(torch.utils.data.Dataset):
         index = i % len(self.countries)
         img, _ = self.countries[index]
         img = self.transforms(img)
-        background = self.backgrounds[random.randint(0, len(self.backgrounds) - 1)]
-        background.paste(img)
+        background = None
+        texture = None
+        if random.random() < .95:
+            background = self.backgrounds[random.randint(0, len(self.backgrounds) - 1)]
+        else:
+            background = PIL.Image.new("RGBA", (100, 100), (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)))
+        if random.random() < .95:
+            texture = self.backgrounds[random.randint(0, len(self.backgrounds) - 1)]
+        else:
+            texture = PIL.Image.new("RGBA", (100, 100), (random.randint(0, 255), random.randint(0, 255), random.randint(0, 255)))
+        background.paste(texture, (0,0), img)
         img = T.ToTensor()(background)[:3]
         self.normalize(img)
         return img, index
